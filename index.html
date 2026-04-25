@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="المصروف">
+<meta name="theme-color" content="#0f172a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f172a'/><text y='68' x='50' text-anchor='middle' font-size='55'>💰</text></svg>">
+<title>إدارة المصروف</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: -apple-system, 'SF Pro Arabic', 'SF Pro Display', system-ui, sans-serif;
+  background: #0f172a; color: #e2e8f0; direction: rtl;
+  min-height: 100vh; min-height: 100dvh;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
+  overscroll-behavior: none;
+}
+.app { max-width: 480px; margin: 0 auto; padding-bottom: 100px; }
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  padding: 16px; padding-top: calc(16px + env(safe-area-inset-top));
+  border-bottom: 1px solid rgba(148,163,184,0.1);
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 10;
+}
+.header h1 { font-size: 20px; font-weight: 800; color: #f8fafc; }
+.header .sub { font-size: 12px; color: #64748b; margin-top: 2px; }
+.btn-settings {
+  background: rgba(148,163,184,0.1); border: 1px solid rgba(148,163,184,0.15);
+  color: #94a3b8; border-radius: 10px; padding: 8px 14px; font-size: 13px; cursor: pointer;
+}
+
+/* Settings Panel */
+.settings {
+  padding: 16px; background: #1e293b;
+  border-bottom: 1px solid rgba(148,163,184,0.1);
+  display: none;
+}
+.settings.open { display: block; }
+.settings label { font-size: 12px; color: #94a3b8; display: block; margin-bottom: 6px; }
+.settings input {
+  width: 100%; padding: 12px; border-radius: 10px;
+  border: 1px solid rgba(148,163,184,0.2); background: #0f172a;
+  color: #f8fafc; font-size: 18px; outline: none;
+  direction: ltr; text-align: right; font-family: 'Courier New', monospace;
+}
+.settings .hint { font-size: 11px; color: #64748b; margin-top: 6px; }
+.settings .btns { display: flex; gap: 8px; margin-top: 12px; }
+.btn-save {
+  flex: 1; padding: 12px; border-radius: 10px; border: none;
+  background: #22c55e; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.btn-reset {
+  padding: 12px 16px; border-radius: 10px;
+  border: 1px solid rgba(239,68,68,0.3); background: rgba(239,68,68,0.1);
+  color: #ef4444; font-size: 13px; cursor: pointer;
+}
+
+/* Cards */
+.content { padding: 16px 16px 0; }
+.card {
+  background: linear-gradient(135deg, #1e293b, #334155);
+  border-radius: 16px; padding: 20px;
+  border: 1px solid rgba(148,163,184,0.1); margin-bottom: 12px;
+}
+.card-flat {
+  background: #1e293b; border-radius: 16px; padding: 16px;
+  border: 1px solid rgba(148,163,184,0.1); margin-bottom: 12px;
+}
+
+/* Daily Limit Box */
+.limit-box {
+  background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.2);
+  border-radius: 12px; padding: 14px; margin-bottom: 16px; text-align: center;
+}
+.limit-box .label { font-size: 11px; color: #38bdf8; margin-bottom: 4px; }
+.limit-box .amount {
+  font-size: 30px; font-weight: 800; color: #38bdf8;
+  font-family: 'Courier New', monospace;
+}
+.limit-box .unit { font-size: 13px; }
+
+/* Stats Row */
+.stats { display: flex; gap: 10px; }
+.stat {
+  flex: 1; background: rgba(0,0,0,0.25); border-radius: 10px;
+  padding: 10px; text-align: center;
+}
+.stat .label { font-size: 10px; color: #64748b; margin-bottom: 4px; }
+.stat .val { font-size: 17px; font-weight: 800; font-family: 'Courier New', monospace; }
+.stat .val.green { color: #22c55e; }
+.stat .val.yellow { color: #f59e0b; }
+.stat .val.white { color: #e2e8f0; }
+
+/* Savings Banner */
+.savings {
+  margin-top: 12px; padding: 8px 12px; border-radius: 10px; text-align: center;
+  font-size: 12px; font-weight: 600;
+}
+.savings.positive { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); color: #22c55e; }
+.savings.negative { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #ef4444; }
+
+/* Today Progress */
+.today-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.today-label { font-size: 13px; color: #94a3b8; }
+.today-amount { font-size: 20px; font-weight: 800; font-family: 'Courier New', monospace; }
+.today-amount.ok { color: #22c55e; }
+.today-amount.over { color: #ef4444; }
+.today-sub { font-size: 11px; color: #64748b; margin-bottom: 8px; text-align: left; }
+.progress-bar { height: 10px; border-radius: 5px; background: rgba(148,163,184,0.1); overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 5px; transition: width 0.4s ease; }
+.progress-fill.green { background: linear-gradient(90deg, #22c55e, #16a34a); }
+.progress-fill.yellow { background: linear-gradient(90deg, #f59e0b, #eab308); }
+.progress-fill.red { background: linear-gradient(90deg, #ef4444, #dc2626); }
+.over-alert {
+  margin-top: 8px; padding: 8px 10px; border-radius: 8px;
+  background: rgba(239,68,68,0.1); color: #ef4444;
+  font-size: 13px; font-weight: 700; text-align: center;
+}
+.card-flat.over-border { border-color: rgba(239,68,68,0.3); }
+
+/* Add Expense */
+.section-title { font-size: 13px; color: #94a3b8; margin-bottom: 8px; font-weight: 600; }
+textarea.sms {
+  width: 100%; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid rgba(148,163,184,0.15); background: #0f172a;
+  color: #e2e8f0; font-size: 13px; outline: none; resize: none;
+  font-family: inherit; direction: rtl;
+}
+.extracted {
+  margin-top: 6px; padding: 6px 10px; border-radius: 8px;
+  background: rgba(34,197,94,0.1); color: #22c55e; font-size: 12px;
+}
+.input-row { display: flex; gap: 8px; margin-top: 8px; }
+input.amount-input {
+  flex: 1; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid rgba(148,163,184,0.15); background: #0f172a;
+  color: #f8fafc; font-size: 16px; outline: none;
+  direction: ltr; text-align: right; font-family: 'Courier New', monospace;
+}
+input.note-input {
+  flex: 1; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid rgba(148,163,184,0.15); background: #0f172a;
+  color: #f8fafc; font-size: 13px; outline: none;
+}
+.btn-add {
+  width: 100%; padding: 12px; border-radius: 12px; border: none;
+  color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 10px;
+  transition: all 0.2s;
+}
+.btn-add.active { background: linear-gradient(135deg, #22c55e, #16a34a); opacity: 1; }
+.btn-add.inactive { background: #334155; opacity: 0.5; }
+
+/* Expense Items */
+.expense-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: 12px; margin-bottom: 6px;
+}
+.expense-item.ok { background: rgba(34,197,94,0.06); border: 1px solid rgba(34,197,94,0.15); }
+.expense-item.over { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); }
+.expense-info { flex: 1; }
+.expense-note { font-size: 13px; color: #94a3b8; margin-bottom: 2px; }
+.expense-time { font-size: 11px; color: #64748b; }
+.expense-amount { font-size: 18px; font-weight: 700; font-family: 'Courier New', monospace; }
+.expense-amount.ok { color: #22c55e; }
+.expense-amount.over { color: #ef4444; }
+.btn-delete {
+  background: none; border: none; color: #94a3b8;
+  font-size: 18px; cursor: pointer; padding: 0 4px; line-height: 1;
+}
+
+/* History */
+.btn-history {
+  width: 100%; padding: 12px; border-radius: 12px;
+  border: 1px solid rgba(148,163,184,0.1); background: #1e293b;
+  color: #94a3b8; font-size: 13px; cursor: pointer; margin-bottom: 12px;
+}
+.day-card {
+  background: #1e293b; border-radius: 12px; padding: 12px; margin-bottom: 8px;
+}
+.day-card.over { border: 1px solid rgba(239,68,68,0.15); }
+.day-card.ok { border: 1px solid rgba(148,163,184,0.08); }
+.day-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.day-label { font-size: 13px; color: #94a3b8; }
+.day-total { font-size: 15px; font-weight: 700; font-family: 'Courier New', monospace; }
+
+/* Empty State */
+.empty { text-align: center; padding: 40px 20px; color: #475569; }
+.empty .icon { font-size: 40px; margin-bottom: 12px; }
+.empty .title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.empty .desc { font-size: 12px; }
+
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>إدارة المصروف</h1>
+      <div class="sub" id="headerSub"></div>
+    </div>
+    <button class="btn-settings" id="btnSettings">⚙️</button>
+  </div>
+
+  <!-- Settings -->
+  <div class="settings" id="settingsPanel">
+    <label>رصيد الحساب (أول الشهر)</label>
+    <input type="number" id="inputBalance" placeholder="مثال: 3500">
+    <div class="hint">حدك اليومي = الرصيد ÷ ٢٧ يوم (ثابت)</div>
+    <div class="btns">
+      <button class="btn-save" id="btnSave">حفظ</button>
+      <button class="btn-reset" id="btnReset">مسح الكل</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Balance Card -->
+    <div class="card" id="balanceCard">
+      <div class="limit-box">
+        <div class="label" id="limitLabel"></div>
+        <div class="amount"><span id="limitAmount">0</span> <span class="unit">ريال</span></div>
+      </div>
+      <div class="stats">
+        <div class="stat">
+          <div class="label">المتبقي</div>
+          <div class="val green" id="statRemaining">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">المصروف</div>
+          <div class="val yellow" id="statSpent">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">باقي أيام</div>
+          <div class="val white" id="statDays">0</div>
+        </div>
+      </div>
+      <div id="savingsBanner" class="savings hidden"></div>
+    </div>
+
+    <!-- Today Progress -->
+    <div class="card-flat" id="todayCard">
+      <div class="today-header">
+        <span class="today-label">مصروف اليوم</span>
+        <span class="today-amount" id="todayAmount">0 / 0</span>
+      </div>
+      <div class="today-sub" id="todaySub"></div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div class="over-alert hidden" id="overAlert"></div>
+    </div>
+
+    <!-- Add Expense -->
+    <div class="card-flat">
+      <div class="section-title">إضافة مصروف</div>
+      <textarea class="sms" id="smsInput" rows="2" placeholder="📋 الصق رسالة البنك هنا"></textarea>
+      <div class="extracted hidden" id="extractedMsg"></div>
+      <div class="input-row">
+        <input type="number" class="amount-input" id="amountInput" placeholder="المبلغ">
+        <input type="text" class="note-input" id="noteInput" placeholder="ملاحظة">
+      </div>
+      <button class="btn-add inactive" id="btnAdd">إضافة</button>
+    </div>
+
+    <!-- Today's Expenses -->
+    <div id="todayList"></div>
+
+    <!-- History -->
+    <div id="historySection"></div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty" id="emptyState">
+    <div class="icon">💰</div>
+    <div class="title">ابدأ هنا</div>
+    <div class="desc">اضغط ⚙️ وحط رصيدك — الحد = الرصيد ÷ ٢٧ يوم</div>
+  </div>
+</div>
+
+<script>
+const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+const CYCLE = 27;
+const fmt = n => Number(n).toLocaleString('en');
+
+function getToday() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function getMonthKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+function extractAmount(text) {
+  const c = text.replace(/,/g, '');
+  const pats = [
+    /(?:مبلغ|بمبلغ|amount)\s*:?\s*([\d.]+)/i,
+    /(?:SAR|sar|ريال|ر\.س)\s*([\d.]+)/i,
+    /([\d.]+)\s*(?:SAR|sar|ريال|ر\.س)/i,
+    /([\d]+\.[\d]{2})/,
+  ];
+  for (const p of pats) { const m = c.match(p); if (m) return parseFloat(m[1]); }
+  const nums = c.match(/[\d]+\.?\d*/g);
+  if (nums) {
+    const v = nums.map(Number).filter(n => n > 0 && n < 1000000);
+    if (v.length === 1) return v[0];
+    if (v.length > 1) return Math.max(...v);
+  }
+  return null;
+}
+
+// State
+let state = { balance: 0, expenses: {} };
+const monthKey = getMonthKey();
+const today = getToday();
+const now = new Date();
+const currentDay = now.getDate();
+const daysLeft = currentDay <= CYCLE ? CYCLE - currentDay + 1 : 0;
+
+function load() {
+  try {
+    const d = localStorage.getItem('expense-app-v1');
+    if (d) state = JSON.parse(d);
+  } catch(e) {}
+}
+function save() {
+  try { localStorage.setItem('expense-app-v1', JSON.stringify(state)); } catch(e) {}
+}
+
+function getMonthExpenses() {
+  return Object.entries(state.expenses)
+    .filter(([k]) => k.startsWith(monthKey))
+    .flatMap(([,v]) => v);
+}
+
+function render() {
+  const monthTotal = getMonthExpenses().reduce((s,e) => s + e.amount, 0);
+  const remaining = state.balance - monthTotal;
+  const dailyLimit = state.balance > 0 ? Math.floor(state.balance / CYCLE) : 0;
+  const todayExps = state.expenses[today] || [];
+  const todayTotal = todayExps.reduce((s,e) => s + e.amount, 0);
+  const todayRem = dailyLimit - todayTotal;
+  const pct = dailyLimit > 0 ? Math.min((todayTotal / dailyLimit) * 100, 100) : 0;
+  const over = todayTotal > dailyLimit && dailyLimit > 0;
+  const expectedSpent = dailyLimit * (Math.min(currentDay, CYCLE) - 1);
+  const prevSpent = monthTotal - todayTotal;
+  const saved = expectedSpent - prevSpent;
+
+  // Header
+  document.getElementById('headerSub').textContent = `${MONTHS_AR[now.getMonth()]} — يوم ${currentDay} من ${CYCLE}`;
+
+  // Empty state
+  document.getElementById('emptyState').style.display = state.balance === 0 ? 'block' : 'none';
+  document.getElementById('balanceCard').style.display = state.balance > 0 ? 'block' : 'none';
+
+  // Limit
+  document.getElementById('limitLabel').textContent = `حدك اليومي (${fmt(state.balance)} ÷ ${CYCLE} يوم)`;
+  document.getElementById('limitAmount').textContent = fmt(dailyLimit);
+
+  // Stats
+  const remEl = document.getElementById('statRemaining');
+  remEl.textContent = fmt(remaining);
+  remEl.style.color = remaining < 0 ? '#ef4444' : remaining < state.balance * 0.2 ? '#f59e0b' : '#22c55e';
+  document.getElementById('statSpent').textContent = fmt(monthTotal);
+  document.getElementById('statDays').textContent = daysLeft;
+
+  // Savings
+  const savBanner = document.getElementById('savingsBanner');
+  if (monthTotal > 0) {
+    savBanner.classList.remove('hidden');
+    savBanner.className = `savings ${saved >= 0 ? 'positive' : 'negative'}`;
+    savBanner.textContent = saved >= 0
+      ? `✅ وفّرت ${fmt(saved)} ريال من الأيام السابقة`
+      : `⚠️ تجاوزت ${fmt(Math.abs(saved))} ريال من الأيام السابقة`;
+  } else {
+    savBanner.classList.add('hidden');
+  }
+
+  // Today
+  const todayCard = document.getElementById('todayCard');
+  todayCard.className = `card-flat${over ? ' over-border' : ''}`;
+  const todayAmt = document.getElementById('todayAmount');
+  todayAmt.textContent = `${fmt(todayTotal)} / ${fmt(dailyLimit)}`;
+  todayAmt.className = `today-amount ${over ? 'over' : 'ok'}`;
+  document.getElementById('todaySub').textContent = over
+    ? `تجاوزت بـ ${fmt(todayTotal - dailyLimit)} ريال`
+    : `باقي لك ${fmt(todayRem)} ريال اليوم`;
+
+  const fill = document.getElementById('progressFill');
+  fill.style.width = pct + '%';
+  fill.className = `progress-fill ${over ? 'red' : pct > 75 ? 'yellow' : 'green'}`;
+
+  const alert = document.getElementById('overAlert');
+  if (over) { alert.classList.remove('hidden'); alert.textContent = `🔴 تجاوزت الحد اليومي!`; }
+  else { alert.classList.add('hidden'); }
+
+  // Today list
+  const listEl = document.getElementById('todayList');
+  if (todayExps.length > 0) {
+    listEl.innerHTML = `<div class="section-title" style="margin-bottom:8px">مصاريف اليوم (${todayExps.length})</div>` +
+      todayExps.map(e => {
+        const isOver = e.overLimit;
+        return `<div class="expense-item ${isOver ? 'over' : 'ok'}">
+          <div class="expense-info">
+            <div class="expense-note">${e.note || 'مصروف'}</div>
+            <div class="expense-time">${e.time}</div>
+          </div>
+          <div class="expense-amount ${isOver ? 'over' : 'ok'}">${e.amount.toFixed(2)}</div>
+          <button class="btn-delete" onclick="deleteExpense(${e.id})">×</button>
+        </div>`;
+      }).join('');
+  } else {
+    listEl.innerHTML = '';
+  }
+
+  // History
+  const histEl = document.getElementById('historySection');
+  const allDays = Object.entries(state.expenses)
+    .filter(([k]) => k.startsWith(monthKey))
+    .sort(([a],[b]) => b.localeCompare(a));
+
+  if (allDays.length > 0) {
+    const histBtn = `<button class="btn-history" id="btnHistory" onclick="toggleHistory()">
+      ▼ سجل المصاريف (${allDays.length} يوم)
+    </button>`;
+    const histContent = `<div id="historyContent" class="hidden">${allDays.map(([day, items]) => {
+      const dt = items.reduce((s,e) => s + e.amount, 0);
+      const dOver = dt > dailyLimit;
+      return `<div class="day-card ${dOver ? 'over' : 'ok'}">
+        <div class="day-header">
+          <span class="day-label">يوم ${parseInt(day.split('-')[2])}</span>
+          <span class="day-total" style="color:${dOver ? '#ef4444' : '#22c55e'}">${dt.toFixed(0)} ريال</span>
+        </div>
+        ${items.map(e => `<div class="expense-item ${e.overLimit ? 'over' : 'ok'}">
+          <div class="expense-info">
+            <div class="expense-note">${e.note || 'مصروف'}</div>
+            <div class="expense-time">${e.time}</div>
+          </div>
+          <div class="expense-amount ${e.overLimit ? 'over' : 'ok'}">${e.amount.toFixed(2)}</div>
+          <button class="btn-delete" onclick="deleteExpense(${e.id})">×</button>
+        </div>`).join('')}
+      </div>`;
+    }).join('')}</div>`;
+    histEl.innerHTML = histBtn + histContent;
+  } else {
+    histEl.innerHTML = '';
+  }
+}
+
+function toggleHistory() {
+  const el = document.getElementById('historyContent');
+  const btn = document.getElementById('btnHistory');
+  if (el.classList.contains('hidden')) {
+    el.classList.remove('hidden');
+    btn.textContent = '▲ إخفاء';
+  } else {
+    el.classList.add('hidden');
+    const count = Object.keys(state.expenses).filter(k => k.startsWith(monthKey)).length;
+    btn.textContent = `▼ سجل المصاريف (${count} يوم)`;
+  }
+}
+
+function deleteExpense(id) {
+  for (const key in state.expenses) {
+    state.expenses[key] = state.expenses[key].filter(e => e.id !== id);
+    if (state.expenses[key].length === 0) delete state.expenses[key];
+  }
+  save(); render();
+}
+
+function addExpense() {
+  const amt = parseFloat(document.getElementById('amountInput').value);
+  if (!amt || amt <= 0) return;
+  const noteVal = document.getElementById('noteInput').value;
+  const smsVal = document.getElementById('smsInput').value;
+  const dailyLimit = state.balance > 0 ? Math.floor(state.balance / CYCLE) : 0;
+  const todayExps = state.expenses[today] || [];
+  const todayTotal = todayExps.reduce((s,e) => s + e.amount, 0);
+
+  const exp = {
+    id: Date.now(),
+    amount: amt,
+    note: noteVal || (smsVal ? 'رسالة بنك' : 'مصروف'),
+    time: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+    overLimit: (todayTotal + amt) > dailyLimit,
+  };
+  if (!state.expenses[today]) state.expenses[today] = [];
+  state.expenses[today].push(exp);
+
+  document.getElementById('smsInput').value = '';
+  document.getElementById('amountInput').value = '';
+  document.getElementById('noteInput').value = '';
+  document.getElementById('extractedMsg').classList.add('hidden');
+  document.getElementById('btnAdd').className = 'btn-add inactive';
+
+  save(); render();
+
+  // Haptic feedback
+  if (navigator.vibrate) navigator.vibrate(50);
+}
+
+// Init
+load();
+render();
+
+// Settings toggle
+document.getElementById('btnSettings').addEventListener('click', () => {
+  const panel = document.getElementById('settingsPanel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    document.getElementById('inputBalance').value = state.balance || '';
+  }
+});
+
+// Save settings
+document.getElementById('btnSave').addEventListener('click', () => {
+  const b = parseFloat(document.getElementById('inputBalance').value);
+  if (!b || b <= 0) return;
+  state.balance = b;
+  document.getElementById('settingsPanel').classList.remove('open');
+  save(); render();
+});
+
+// Reset
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (confirm('هل تريد مسح كل بيانات الشهر؟')) {
+    state = { balance: 0, expenses: {} };
+    document.getElementById('settingsPanel').classList.remove('open');
+    save(); render();
+  }
+});
+
+// SMS paste
+document.getElementById('smsInput').addEventListener('input', function() {
+  const amt = extractAmount(this.value);
+  const msg = document.getElementById('extractedMsg');
+  if (amt) {
+    msg.textContent = `✅ تم استخراج: ${amt} ريال`;
+    msg.classList.remove('hidden');
+    document.getElementById('amountInput').value = amt;
+    document.getElementById('btnAdd').className = 'btn-add active';
+  } else {
+    msg.classList.add('hidden');
+  }
+});
+
+// Amount input
+document.getElementById('amountInput').addEventListener('input', function() {
+  document.getElementById('btnAdd').className = this.value ? 'btn-add active' : 'btn-add inactive';
+});
+
+// Add button
+document.getElementById('btnAdd').addEventListener('click', addExpense);
+
+// Register SW
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
